@@ -11,6 +11,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.27.3
         version: 0.27.3
+      '@fal-ai/client':
+        specifier: ^1.2.1
+        version: 1.2.1
       '@fal-ai/serverless-client':
         specifier: ^0.14.2
         version: 0.14.2
@@ -206,6 +209,10 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fal-ai/client@1.2.1':
+    resolution: {integrity: sha512-Z/bztRqOeduuUYl74VPQRDS12vjXGGebROJM7NcJXCmkV4GSZllA68ES1GwY3Q+31puukBoOppC0iBmY6us5MQ==}
+    engines: {node: '>=18.0.0'}
 
   '@fal-ai/serverless-client@0.14.2':
     resolution: {integrity: sha512-Rjd+BkFuPyMC1FdeWoMsdhn95WmwYHd0s0thjp9RyKW5/WzEqTT0Q1fyLnjzXAuIEgd9u8Yzu1dKK3GC0vxkgA==}
@@ -1161,6 +1168,12 @@ snapshots:
 
   '@esbuild/win32-x64@0.23.1':
     optional: true
+
+  '@fal-ai/client@1.2.1':
+    dependencies:
+      '@msgpack/msgpack': 3.0.0-beta2
+      eventsource-parser: 1.1.2
+      robot3: 0.4.1
 
   '@fal-ai/serverless-client@0.14.2':
     dependencies:

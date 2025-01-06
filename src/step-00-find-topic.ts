@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources";
-import { CacheOrComputer } from "./util/api-cache";
-import { StatsCounter } from "./util/stats";
+import {MessageCreateParamsNonStreaming} from "@anthropic-ai/sdk/resources";
+import {CacheOrComputer} from "./util/api-cache";
+import {StatsCounter} from "./util/stats";
 
 const PROMPT = `
 You are tasked with generating 10 topics for deep, insightful TikTok-style short video that resonates with many people but has a specific insight. This topic should be suitable for creating engaging, thought-provoking content that can capture viewers' attention quickly and leave a lasting impression.
@@ -62,94 +62,94 @@ Output 10 different topics. Output example:
 }, ...]`;
 
 export type FindTopicAiResponse = {
-  topic: string;
-  clickbait_title: string;
-  voice: string;
+    topic: string;
+    clickbait_title: string;
+    voice: string;
 };
 
 export type FindTopicAiResponseFull = {
-  topic: string;
-  key_insight: string;
-  relevance: string;
-  potential_impact: string;
-  clickbait_title: string;
-  instagram_hashtags: string;
-  voice: string;
+    topic: string;
+    key_insight: string;
+    relevance: string;
+    potential_impact: string;
+    clickbait_title: string;
+    instagram_hashtags: string;
+    voice: string;
 };
 
 // If count > 10, do multiple calls to get more topics
 export async function step00FindTopic(
-  apiFromCacheOr: CacheOrComputer,
-  config: { ANTHROPIC_API_KEY?: string; ANTHROPIC_MODEL?: string },
-  statsCounter: StatsCounter,
-  seed: number,
-  count: number
+    apiFromCacheOr: CacheOrComputer,
+    config: { ANTHROPIC_API_KEY?: string; ANTHROPIC_MODEL?: string },
+    statsCounter: StatsCounter,
+    seed: number,
+    count: number
 ): Promise<FindTopicAiResponse[]> {
-  if (count > 100) throw Error("prompt too long");
-  const key = config.ANTHROPIC_API_KEY;
-  if (!key || !config.ANTHROPIC_MODEL) throw Error("no ANTHROPIC_API_KEY");
-  const previousResults: Anthropic.Messages.MessageParam[] = [];
-  const oldTopics: FindTopicAiResponse[] = [];
-  const iteration = Math.floor((count - 1) / 10);
-  for (let i = 0; i < iteration; i++) {
-    const topics = await step00FindTopic(
-      apiFromCacheOr,
-      config,
-      statsCounter,
-      seed,
-      (i + 1) * 10
-    );
-    topics.splice(0, topics.length - 10);
-    previousResults.push({
-      role: "assistant",
-      content: [{ type: "text", text: JSON.stringify(topics, null, 2) }],
-    });
-    previousResults.push({
-      role: "user",
-      content: [{ type: "text", text: "Ten more topics" }],
-    });
-    oldTopics.push(...topics);
-  }
-  const anthropic = new Anthropic({ apiKey: key });
-  const model = config.ANTHROPIC_MODEL;
-  const body: MessageCreateParamsNonStreaming & { seed: number } = {
-    model,
-    max_tokens: 4096,
-    // temperature: 0,
-    // system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: PROMPT,
-          },
+    if (count > 100) throw Error("prompt too long");
+    const key = config.ANTHROPIC_API_KEY;
+    if (!key || !config.ANTHROPIC_MODEL) throw Error("no ANTHROPIC_API_KEY");
+    const previousResults: Anthropic.Messages.MessageParam[] = [];
+    const oldTopics: FindTopicAiResponse[] = [];
+    const iteration = Math.floor((count - 1) / 10);
+    for (let i = 0; i < iteration; i++) {
+        const topics = await step00FindTopic(
+            apiFromCacheOr,
+            config,
+            statsCounter,
+            seed,
+            (i + 1) * 10
+        );
+        topics.splice(0, topics.length - 10);
+        previousResults.push({
+            role: "assistant",
+            content: [{type: "text", text: JSON.stringify(topics, null, 2)}],
+        });
+        previousResults.push({
+            role: "user",
+            content: [{type: "text", text: "Ten more topics"}],
+        });
+        oldTopics.push(...topics);
+    }
+    const anthropic = new Anthropic({apiKey: key});
+    const model = config.ANTHROPIC_MODEL;
+    const body: MessageCreateParamsNonStreaming & { seed: number } = {
+        model,
+        max_tokens: 4096,
+        // temperature: 0,
+        // system: SYSTEM_PROMPT,
+        messages: [
+            {
+                role: "user",
+                content: [
+                    {
+                        type: "text",
+                        text: PROMPT,
+                    },
+                ],
+            },
+            ...previousResults,
+            {
+                role: "assistant",
+                content: [{type: "text", text: "["}],
+            },
         ],
-      },
-      ...previousResults,
-      {
-        role: "assistant",
-        content: [{ type: "text", text: "[" }],
-      },
-    ],
-    seed,
-  };
-  const msg = (
-    await apiFromCacheOr(
-      "https://fakeurl.anthropic.com/anthropic.messages.create",
-      body,
-      async () => {
-        const { seed, ...bodey } = body;
-        const msg = await anthropic.messages.create(bodey);
-        return msg;
-      }
-    )
-  ).data;
-  statsCounter.api_calls += 1;
-  statsCounter.input_tokens += msg.usage.input_tokens;
-  statsCounter.output_tokens += msg.usage.output_tokens;
-  console.assert(msg.content.length === 1);
-  if (!(msg.content[0].type === "text")) throw Error("unexpected message type");
-  return [...oldTopics, ...JSON.parse("[" + msg.content[0].text)];
+        seed,
+    };
+    const msg = (
+        await apiFromCacheOr(
+            "https://fakeurl.anthropic.com/anthropic.messages.create",
+            body,
+            async () => {
+                const {seed, ...bodey} = body;
+                const msg = await anthropic.messages.create(bodey);
+                return msg;
+            }
+        )
+    ).data;
+    statsCounter.api_calls += 1;
+    statsCounter.input_tokens += msg.usage.input_tokens;
+    statsCounter.output_tokens += msg.usage.output_tokens;
+    console.assert(msg.content.length === 1);
+    if (!(msg.content[0].type === "text")) throw Error("unexpected message type");
+    return [...oldTopics, ...JSON.parse("[" + msg.content[0].text)];
 }

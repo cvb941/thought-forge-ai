@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources";
-import { CacheOrComputer } from "./util/api-cache";
-import { StatsCounter } from "./util/stats";
+import {MessageCreateParamsNonStreaming} from "@anthropic-ai/sdk/resources";
+import {CacheOrComputer} from "./util/api-cache";
+import {StatsCounter} from "./util/stats";
 
 const PROMPT = `
 You are a director and producer specializing in deep thought TikTok content. Your task is to generate prompts for an image generation AI that will illustrate a given monologue. Follow these instructions carefully:
@@ -50,56 +50,56 @@ Begin processing the monologue now.
 `;
 
 export async function step03TextToImagePrompt(
-  apiFromCacheOr: CacheOrComputer,
-  config: { ANTHROPIC_API_KEY?: string; ANTHROPIC_MODEL?: string },
-  statsCounter: StatsCounter,
-  monologue: string
+    apiFromCacheOr: CacheOrComputer,
+    config: { ANTHROPIC_API_KEY?: string; ANTHROPIC_MODEL?: string },
+    statsCounter: StatsCounter,
+    monologue: string
 ) {
-  const key = config.ANTHROPIC_API_KEY;
-  if (!key || !config.ANTHROPIC_MODEL) throw Error("no ANTHROPIC_API_KEY");
-  const anthropic = new Anthropic({ apiKey: key });
-  const model = config.ANTHROPIC_MODEL;
-  const body: MessageCreateParamsNonStreaming = {
-    model,
-    max_tokens: 4096,
-    // temperature: 0,
-    // system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: PROMPT.replace(
-              "{{MONOLOGUE}}",
-              JSON.stringify(monologue, null, 2)
-            ),
-          },
+    const key = config.ANTHROPIC_API_KEY;
+    if (!key || !config.ANTHROPIC_MODEL) throw Error("no ANTHROPIC_API_KEY");
+    const anthropic = new Anthropic({apiKey: key});
+    const model = config.ANTHROPIC_MODEL;
+    const body: MessageCreateParamsNonStreaming = {
+        model,
+        max_tokens: 4096,
+        // temperature: 0,
+        // system: SYSTEM_PROMPT,
+        messages: [
+            {
+                role: "user",
+                content: [
+                    {
+                        type: "text",
+                        text: PROMPT.replace(
+                            "{{MONOLOGUE}}",
+                            JSON.stringify(monologue, null, 2)
+                        ),
+                    },
+                ],
+            },
+            {
+                role: "assistant",
+                content: [{type: "text", text: "["}],
+            },
         ],
-      },
-      {
-        role: "assistant",
-        content: [{ type: "text", text: "[" }],
-      },
-    ],
-  };
-  const msg = (
-    await apiFromCacheOr(
-      "https://fakeurl.anthropic.com/anthropic.messages.create",
-      body,
-      async () => {
-        const msg = await anthropic.messages.create(body);
-        return msg;
-      }
-    )
-  ).data;
-  statsCounter.api_calls += 1;
-  statsCounter.input_tokens += msg.usage.input_tokens;
-  statsCounter.output_tokens += msg.usage.output_tokens;
-  console.assert(msg.content.length === 1);
-  if (!(msg.content[0].type === "text")) throw Error("unexpected message type");
-  return JSON.parse("[" + msg.content[0].text) as {
-    text: string;
-    prompt: string;
-  }[];
+    };
+    const msg = (
+        await apiFromCacheOr(
+            "https://fakeurl.anthropic.com/anthropic.messages.create",
+            body,
+            async () => {
+                const msg = await anthropic.messages.create(body);
+                return msg;
+            }
+        )
+    ).data;
+    statsCounter.api_calls += 1;
+    statsCounter.input_tokens += msg.usage.input_tokens;
+    statsCounter.output_tokens += msg.usage.output_tokens;
+    console.assert(msg.content.length === 1);
+    if (!(msg.content[0].type === "text")) throw Error("unexpected message type");
+    return JSON.parse("[" + msg.content[0].text) as {
+        text: string;
+        prompt: string;
+    }[];
 }

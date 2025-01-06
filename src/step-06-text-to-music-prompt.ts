@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources";
-import { CacheOrComputer } from "./util/api-cache";
-import { StatsCounter } from "./util/stats";
+import {MessageCreateParamsNonStreaming} from "@anthropic-ai/sdk/resources";
+import {CacheOrComputer} from "./util/api-cache";
+import {StatsCounter} from "./util/stats";
 
 const PROMPT = `
 You are a writer and director specializing in deep thought TikTok content. Your task is to generate an AI prompt for a music generation AI to create background music for a {{DURATION}}-second monologue. This music should enhance the emotional impact and complement the content of the monologue.
@@ -35,50 +35,50 @@ Output ONLY the AI prompt. Aim for a prompt of 3-5 sentences that clearly convey
 `;
 
 export async function step06TextToMusicPrompt(
-  apiFromCacheOr: CacheOrComputer,
-  config: { ANTHROPIC_API_KEY?: string; ANTHROPIC_MODEL?: string },
-  statsCounter: StatsCounter,
-  monologue: string,
-  durationSeconds: number
+    apiFromCacheOr: CacheOrComputer,
+    config: { ANTHROPIC_API_KEY?: string; ANTHROPIC_MODEL?: string },
+    statsCounter: StatsCounter,
+    monologue: string,
+    durationSeconds: number
 ) {
-  const key = config.ANTHROPIC_API_KEY;
-  if (!key || !config.ANTHROPIC_MODEL) throw Error("no ANTHROPIC_API_KEY");
-  const anthropic = new Anthropic({ apiKey: key });
-  const model = config.ANTHROPIC_MODEL;
-  const body: MessageCreateParamsNonStreaming = {
-    model,
-    max_tokens: 4096,
-    // temperature: 0,
-    // system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: PROMPT.replace("{{MONOLOGUE}}", monologue).replace(
-              "{{DURATION}}",
-              `${Math.ceil(durationSeconds)}`
-            ),
-          },
+    const key = config.ANTHROPIC_API_KEY;
+    if (!key || !config.ANTHROPIC_MODEL) throw Error("no ANTHROPIC_API_KEY");
+    const anthropic = new Anthropic({apiKey: key});
+    const model = config.ANTHROPIC_MODEL;
+    const body: MessageCreateParamsNonStreaming = {
+        model,
+        max_tokens: 4096,
+        // temperature: 0,
+        // system: SYSTEM_PROMPT,
+        messages: [
+            {
+                role: "user",
+                content: [
+                    {
+                        type: "text",
+                        text: PROMPT.replace("{{MONOLOGUE}}", monologue).replace(
+                            "{{DURATION}}",
+                            `${Math.ceil(durationSeconds)}`
+                        ),
+                    },
+                ],
+            },
         ],
-      },
-    ],
-  };
-  const msg = (
-    await apiFromCacheOr(
-      "https://fakeurl.anthropic.com/anthropic.messages.create",
-      body,
-      async () => {
-        const msg = await anthropic.messages.create(body);
-        return msg;
-      }
-    )
-  ).data;
-  statsCounter.api_calls += 1;
-  statsCounter.input_tokens += msg.usage.input_tokens;
-  statsCounter.output_tokens += msg.usage.output_tokens;
-  console.assert(msg.content.length === 1);
-  if (!(msg.content[0].type === "text")) throw Error("unexpected message type");
-  return msg.content[0].text;
+    };
+    const msg = (
+        await apiFromCacheOr(
+            "https://fakeurl.anthropic.com/anthropic.messages.create",
+            body,
+            async () => {
+                const msg = await anthropic.messages.create(body);
+                return msg;
+            }
+        )
+    ).data;
+    statsCounter.api_calls += 1;
+    statsCounter.input_tokens += msg.usage.input_tokens;
+    statsCounter.output_tokens += msg.usage.output_tokens;
+    console.assert(msg.content.length === 1);
+    if (!(msg.content[0].type === "text")) throw Error("unexpected message type");
+    return msg.content[0].text;
 }

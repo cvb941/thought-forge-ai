@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources";
-import { FindTopicAiResponse } from "./step-00-find-topic";
-import { CacheOrComputer } from "./util/api-cache";
-import { StatsCounter } from "./util/stats";
+import {MessageCreateParamsNonStreaming} from "@anthropic-ai/sdk/resources";
+import {FindTopicAiResponse} from "./step-00-find-topic";
+import {CacheOrComputer} from "./util/api-cache";
+import {StatsCounter} from "./util/stats";
 
 const PROMPT = `
 Craft a monologue or story based on the given topic. Orient yourself by the examples.
@@ -118,50 +118,50 @@ I sat with my anger long enough until it told me it's real name was grief. I'm n
 </monologue>`;
 
 export async function step01WriteScript(
-  apiFromCacheOr: CacheOrComputer,
-  config: { ANTHROPIC_API_KEY?: string; ANTHROPIC_MODEL?: string },
-  statsCounter: StatsCounter,
-  topic: FindTopicAiResponse
+    apiFromCacheOr: CacheOrComputer,
+    config: { ANTHROPIC_API_KEY?: string; ANTHROPIC_MODEL?: string },
+    statsCounter: StatsCounter,
+    topic: FindTopicAiResponse
 ) {
-  const key = config.ANTHROPIC_API_KEY;
-  if (!key || !config.ANTHROPIC_MODEL) throw Error("no ANTHROPIC_API_KEY");
-  const anthropic = new Anthropic({ apiKey: key });
-  const model = config.ANTHROPIC_MODEL;
-  const body: MessageCreateParamsNonStreaming = {
-    model,
-    max_tokens: 4096,
-    // temperature: 0,
-    // system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: PROMPT.replace("{{TOPIC}}", topic.topic),
-          },
+    const key = config.ANTHROPIC_API_KEY;
+    if (!key || !config.ANTHROPIC_MODEL) throw Error("no ANTHROPIC_API_KEY");
+    const anthropic = new Anthropic({apiKey: key});
+    const model = config.ANTHROPIC_MODEL;
+    const body: MessageCreateParamsNonStreaming = {
+        model,
+        max_tokens: 4096,
+        // temperature: 0,
+        // system: SYSTEM_PROMPT,
+        messages: [
+            {
+                role: "user",
+                content: [
+                    {
+                        type: "text",
+                        text: PROMPT.replace("{{TOPIC}}", topic.topic),
+                    },
+                ],
+            },
+            /*{
+              role: "assistant",
+              content: [{ type: "text", text: "{" }],
+            },*/
         ],
-      },
-      /*{
-        role: "assistant",
-        content: [{ type: "text", text: "{" }],
-      },*/
-    ],
-  };
-  const data = await apiFromCacheOr(
-    "https://fakeurl.anthropic.com/anthropic.messages.create",
-    body,
-    async () => {
-      const msg = await anthropic.messages.create(body);
-      return msg;
-    }
-  );
-  const msg = data.data;
-  console.log("meta", data.meta);
-  statsCounter.api_calls += 1;
-  statsCounter.input_tokens += msg.usage.input_tokens;
-  statsCounter.output_tokens += msg.usage.output_tokens;
-  console.assert(msg.content.length === 1);
-  if (!(msg.content[0].type === "text")) throw Error("unexpected message type");
-  return msg.content[0].text;
+    };
+    const data = await apiFromCacheOr(
+        "https://fakeurl.anthropic.com/anthropic.messages.create",
+        body,
+        async () => {
+            const msg = await anthropic.messages.create(body);
+            return msg;
+        }
+    );
+    const msg = data.data;
+    console.log("meta", data.meta);
+    statsCounter.api_calls += 1;
+    statsCounter.input_tokens += msg.usage.input_tokens;
+    statsCounter.output_tokens += msg.usage.output_tokens;
+    console.assert(msg.content.length === 1);
+    if (!(msg.content[0].type === "text")) throw Error("unexpected message type");
+    return msg.content[0].text;
 }
