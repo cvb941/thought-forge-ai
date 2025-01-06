@@ -75,14 +75,45 @@ async function main() {
             config,
             statsCounter
         );
-    } else {
+    } else if (task === "from-monologue") {
+        let monologue = process.argv[3];
+        if (!monologue) {
+            const readline = require('readline').createInterface({
+                input: process.stdin,
+                output: process.stdout,
+            });
+
+            monologue = await new Promise((resolve) => {
+                readline.question('Enter monologue: ', (input: string) => {
+                    resolve(input.trim());
+                    readline.close();
+                });
+            });
+
+            if (!monologue) {
+                throw new Error("No monologue provided.");
+            }
+        }
+        await generateVideo(
+            await chooseFolderIndex(outRoot, 101),
+            {
+                clickbait_title: monologue.slice(0, 10),
+                topic: monologue,
+                voice: "pqHfZKP75CvOlQylNhV4",
+                monologue: monologue
+            },
+            config,
+            statsCounter
+        );
+    }
+    else {
         throw Error("unknown task");
     }
 }
 
 async function generateVideo(
     choice: number,
-    topic: { clickbait_title: string; voice: string; topic: string },
+    topic: { clickbait_title: string; voice: string; topic: string, monologue?: string },
     config: any,
     statsCounter: StatsCounter,
     seed = 0
@@ -98,7 +129,7 @@ async function generateVideo(
     console.log("writing monologue");
     // having cook in there sometimes makes the AI think it should be about cooking, but I don't want to change it to not bust the cache.
     if (topic.voice === "cook") topic.voice = "kyana";
-    const monologue = await step01WriteMonologue(
+    const monologue = topic.monologue || await step01WriteMonologue(
         apiFromCacheOr,
         config,
         statsCounter,
